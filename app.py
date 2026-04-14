@@ -15,7 +15,9 @@ CORS(app)
 # Replace the URI with your MongoDB Atlas connection string
 app.config["MONGO_URI"] = os.environ.get("MONGO_URI")
 mongo = PyMongo(app)
-
+@app.route('/products')
+def get_products():
+    ...
 # ---------------------------------------------------------
 # 2. USER AUTHENTICATION
 # ---------------------------------------------------------
