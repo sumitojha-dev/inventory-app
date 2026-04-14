@@ -13,7 +13,7 @@ CORS(app)
 # 1. DATABASE CONFIGURATION
 # ---------------------------------------------------------
 # Replace the URI with your MongoDB Atlas connection string
-app.config["MONGO_URI"] = "mongodb+srv://inventoryuser:inventory123@cluster0.lsotepa.mongodb.net/inventory_db?retryWrites=true&w=majority"
+app.config["MONGO_URI"] = os.environ.get("MONGO_URI")
 mongo = PyMongo(app)
 
 # ---------------------------------------------------------
