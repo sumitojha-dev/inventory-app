@@ -1,5 +1,6 @@
 flask
-flask-cors
 flask-pymongo
-werkzeug
+flask-cors
 gunicorn
+pymongo[srv]==3.12.3
+dnspython==2.3.0
