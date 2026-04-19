@@ -1,8 +1,9 @@
+// 🌐 LIVE BACKEND
 const API = "https://inventory-app-lz4o.onrender.com";
 
 let isLogin = true;
 
-// AUTH
+// ---------------- AUTH ----------------
 document.getElementById("auth-form").addEventListener("submit", async (e) => {
     e.preventDefault();
 
@@ -16,23 +17,34 @@ document.getElementById("auth-form").addEventListener("submit", async (e) => {
         ? { email, password }
         : { username, email, password };
 
-    const res = await fetch(API + url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body)
-    });
+    try {
+        alert("If slow, server may be waking up ⏳");
 
-    const data = await res.json();
+        const res = await fetch(API + url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body)
+        });
 
-    if (res.ok) {
-        localStorage.setItem("user", JSON.stringify({ username: data.username }));
-        showApp(data.username);
-    } else {
-        alert(data.message);
+        const data = await res.json();
+
+        if (res.ok) {
+            localStorage.setItem("user", JSON.stringify({
+                username: data.username || username
+            }));
+
+            showApp(data.username || username);
+        } else {
+            alert(data.message || "Something went wrong");
+        }
+
+    } catch (err) {
+        console.error("Auth error:", err);
+        alert("Server not reachable ❌");
     }
 });
 
-// Toggle
+// Toggle Login/Register
 document.getElementById("toggle-auth").onclick = () => {
     isLogin = !isLogin;
     document.getElementById("auth-title").innerText = isLogin ? "Login" : "Register";
@@ -44,9 +56,18 @@ function showApp(username) {
     document.getElementById("auth-container").style.display = "none";
     document.getElementById("app-container").style.display = "block";
     document.getElementById("username").innerText = username;
+
     loadProducts();
     loadOrders();
 }
+
+// Auto login (safe)
+try {
+    const user = JSON.parse(localStorage.getItem("user"));
+    if (user && user.username) {
+        showApp(user.username);
+    }
+} catch {}
 
 // Logout
 function logout() {
@@ -54,24 +75,35 @@ function logout() {
     location.reload();
 }
 
-// PRODUCTS
+// ---------------- PRODUCTS ----------------
 async function loadProducts() {
-    const res = await fetch(API + "/products");
-    const data = await res.json();
+    try {
+        const res = await fetch(API + "/products");
+        const data = await res.json();
 
-    const list = document.getElementById("products");
-    const select = document.getElementById("product-select");
+        if (!Array.isArray(data)) return;
 
-    list.innerHTML = "";
-    select.innerHTML = "";
+        const list = document.getElementById("products");
+        const select = document.getElementById("product-select");
 
-    data.forEach(p => {
-        list.innerHTML += `<li>${p.name} (${p.quantity}) 
-            <button onclick="deleteProduct('${p._id}')">Delete</button>
-        </li>`;
+        list.innerHTML = "";
+        select.innerHTML = "";
 
-        select.innerHTML += `<option value="${p._id}">${p.name}</option>`;
-    });
+        data.forEach(p => {
+            list.innerHTML += `
+                <li>
+                    ${p.name} (${p.quantity}) 
+                    <button onclick="deleteProduct('${p._id}')">Delete</button>
+                </li>
+            `;
+
+            select.innerHTML += `<option value="${p._id}">${p.name}</option>`;
+        });
+
+    } catch (err) {
+        console.error("Error loading products:", err);
+        alert("Failed to load products");
+    }
 }
 
 // Add Product
@@ -79,53 +111,93 @@ document.getElementById("product-form").addEventListener("submit", async (e) => 
     e.preventDefault();
 
     const product = {
-        name: name.value,
-        price: price.value,
-        quantity: quantity.value,
-        category: category.value
+        name: document.getElementById("name").value,
+        price: document.getElementById("price").value,
+        quantity: document.getElementById("quantity").value,
+        category: document.getElementById("category").value
     };
 
-    await fetch(API + "/products", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(product)
-    });
+    // ✅ Validation
+    if (!product.name || !product.price || !product.quantity) {
+        alert("Fill all fields");
+        return;
+    }
 
-    loadProducts();
+    try {
+        await fetch(API + "/products", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(product)
+        });
+
+        e.target.reset();
+        loadProducts();
+
+    } catch (err) {
+        console.error("Add product error:", err);
+        alert("Failed to add product");
+    }
 });
 
-// Delete
+// Delete Product
 async function deleteProduct(id) {
-    await fetch(API + "/products/" + id, { method: "DELETE" });
-    loadProducts();
+    try {
+        await fetch(API + "/products/" + id, { method: "DELETE" });
+        loadProducts();
+    } catch (err) {
+        console.error("Delete error:", err);
+    }
 }
 
-// ORDERS
+// ---------------- ORDERS ----------------
 async function loadOrders() {
-    const res = await fetch(API + "/orders");
-    const data = await res.json();
+    try {
+        const res = await fetch(API + "/orders");
+        const data = await res.json();
 
-    const list = document.getElementById("orders");
-    list.innerHTML = "";
+        if (!Array.isArray(data)) return;
 
-    data.forEach(o => {
-        list.innerHTML += `<li>${o.product_name} - ${o.quantity} - ₹${o.total_price}</li>`;
-    });
+        const list = document.getElementById("orders");
+        list.innerHTML = "";
+
+        data.forEach(o => {
+            list.innerHTML += `
+                <li>
+                    ${o.product_name} - ${o.quantity} - ₹${o.total_price}
+                </li>
+            `;
+        });
+
+    } catch (err) {
+        console.error("Error loading orders:", err);
+    }
 }
 
-// Create Order (FIXED 🔥)
+// Create Order
 document.getElementById("order-form").addEventListener("submit", async (e) => {
     e.preventDefault();
 
     const product_id = document.getElementById("product-select").value;
     const quantity = document.getElementById("order-qty").value;
 
-    await fetch(API + "/orders", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ product_id, quantity })
-    });
+    if (!product_id || !quantity) {
+        alert("Select product and quantity");
+        return;
+    }
 
-    loadOrders();
-    loadProducts();
+    try {
+        await fetch(API + "/orders", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ product_id, quantity })
+        });
+
+        e.target.reset();
+        loadOrders();
+        loadProducts();
+
+    } catch (err) {
+        console.error("Order error:", err);
+        alert("Failed to place order");
+    }
 });

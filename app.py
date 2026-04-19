@@ -12,7 +12,7 @@ CORS(app)
 # ---------------- DATABASE ----------------
 app.config["MONGO_URI"] = os.environ.get(
     "MONGO_URI",
-    "mongodb+srv://inventoryuser:inventory123@cluster0.lsotepa.mongodb.net/?retryWrites=true&w=majority"
+    "mongodb+srv://inventoryuser:inventory123@cluster0.lsotepa.mongodb.net/inventory_db?retryWrites=true&w=majority"
 )
 mongo = PyMongo(app)
 
